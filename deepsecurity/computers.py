@@ -122,25 +122,25 @@ class Computers(core.CoreDict):
         computer_obj = Computer(self.manager, computer, self.log)
         if computer_obj:
           self[computer_obj.id] = computer_obj
-          self.log("Added Computer {}".format(computer_obj.id), level='debug')
+          self.log("Added Computer {0}".format(computer_obj.id), level='debug')
           
           try:
             # add this computer to any appropriate groups on the Manager()
             if 'computer_group_id' in dir(computer_obj) and computer_obj.computer_group_id:
               if self.manager.computer_groups and self.manager.computer_groups.has_key(computer_obj.computer_group_id):
                 self.manager.computer_groups[computer_obj.computer_group_id].computers[computer_obj.id] = computer_obj
-                self.log("Added Computer {} to ComputerGroup {}".format(computer_obj.id, computer_obj.computer_group_id), level='debug')
+                self.log("Added Computer {0} to ComputerGroup {1}".format(computer_obj.id, computer_obj.computer_group_id), level='debug')
           except Exception, hostGroupid_err:
-            self.log("Could not add Computer {} to ComputerGroup".format(computer_obj.id), err=hostGroupid_err)
+            self.log("Could not add Computer {0} to ComputerGroup".format(computer_obj.id), err=hostGroupid_err)
 
           try: 
             # add this computer to any appropriate policies on the Manager()
             if 'policy_id' in dir(computer_obj) and computer_obj.policy_id:
               if self.manager.policies and self.manager.policies.has_key(computer_obj.policy_id):
                 self.manager.policies[computer_obj.policy_id].computers[computer_obj.id] = computer_obj
-                self.log("Added Computer {} to Policy {}".format(computer_obj.id, computer_obj.policy_id), level='debug')
+                self.log("Added Computer {0} to Policy {1}".format(computer_obj.id, computer_obj.policy_id), level='debug')
           except Exception, securityProfileid_err:
-            self.log("Could not add Computer {} to Policy".format(computer_obj.id), err=securityProfileid_err)
+            self.log("Could not add Computer {0} to Policy".format(computer_obj.id), err=securityProfileid_err)
 
     return len(self)
 
@@ -172,7 +172,7 @@ class ComputerGroups(core.CoreDict):
       elif group_id:
         call = self.manager._get_request_format(call='hostGroupRetrieve')
         call['data'] = {
-          'id': '{}'.format(group_id)
+          'id': '{0}'.format(group_id)
           }
     else:
       call = self.manager._get_request_format(call='hostGroupRetrieveAll')
@@ -185,7 +185,7 @@ class ComputerGroups(core.CoreDict):
         computer_group_obj = ComputerGroup(self.manager, group, self.log)
         if computer_group_obj:
           self[computer_group_obj.id] = computer_group_obj
-          self.log("Added ComputerGroup {}".format(computer_group_obj.id), level='debug')
+          self.log("Added ComputerGroup {0}".format(computer_group_obj.id), level='debug')
 
     return len(self)
 

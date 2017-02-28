@@ -27,9 +27,9 @@ class Policies(core.CoreDict):
         if policy_obj:
           try:
             self[policy_obj.id] = policy_obj
-            self.log("Added Policy {}".format(policy_obj.id), level='debug')
+            self.log("Added Policy {0}".format(policy_obj.id), level='debug')
           except Exception, err:
-            self.log("Could not add Policy {}".format(policy_obj), level='warning', err=err)
+            self.log("Could not add Policy {0}".format(policy_obj), level='warning', err=err)
 
     return len(self)
 
@@ -134,7 +134,7 @@ class Policies(core.CoreDict):
         if new_policy:
           self[new_policy.id] = new_policy
           result = new_policy.id
-          self.log("Added new policy #{}".format(new_policy.id))
+          self.log("Added new policy #{0}".format(new_policy.id))
       except Exception, err:
         self.log("Could not create new policy from API response", err=err)
     else:
@@ -168,7 +168,7 @@ class Rules(core.CoreDict):
       if get:
         soap_call = self.manager._get_request_format(call=call)
         if call == 'DPIRuleRetrieveAll':
-          self.log("Calling {}. This may take 15-30 seconds as the call returns a substantial amount of data".format(call), level='warning')
+          self.log("Calling {0}. This may take 15-30 seconds as the call returns a substantial amount of data".format(call), level='warning')
 
         response = self.manager._request(soap_call)
         if response and response['status'] == 200:
@@ -180,11 +180,13 @@ class Rules(core.CoreDict):
                 rule_obj.cve_numbers = rule_obj.cve_numbers.split(', ')
                 if type(rule_obj.cve_numbers) in [type(''), type(u'')]: rule_obj.cve_numbers = [ rule_obj.cve_numbers ]
                 
-              rule_id = '{}-{: >10}'.format(rule_key, i)
+              #TODO: find out what this is. 
+              rule_id = '{0}-'.format(rule_key) + '{0:10d}'.format(i)
+              #rule_id = rule_id + ('%10s' % i);
               if 'id' in dir(rule_obj): rule_id = rule_obj.id
               elif 'tbuid' in dir(rule_obj): rule_id = rule_obj.tbuid
               self[rule_key][rule_id] = rule_obj
-              self.log("Added Rule {} from call {}".format(rule_id, call), level='debug')
+              self.log("Added Rule {0} from call {1}".format(rule_id, call), level='debug')
 
     return len(self)
 
@@ -228,7 +230,7 @@ class Policy(core.CoreObject):
       rules = getattr(self, rule_type)
       if rules:
         for rule in rules['item']:
-          self.rules['{}-{}'.format(rule_type.replace('rule_ids', ''), rule)] = None
+          self.rules['{0}-{1}'.format(rule_type.replace('rule_ids', ''), rule)] = None
 
   def save(self):
     """
@@ -248,7 +250,7 @@ class Policy(core.CoreObject):
     else:
       result = False
       if 'log' in dir(self):
-        self.log("Could not save the policy. Returned: {}".format(response), level='error')
+        self.log("Could not save the policy. Returned: {0}".format(response), level='error')
 
     return result
 

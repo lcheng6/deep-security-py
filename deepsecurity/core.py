@@ -6,6 +6,7 @@ import re
 import ssl
 import urllib
 import urllib2
+import requests
 
 # 3rd party libraries
 import libs.xmltodict as xmltodict
@@ -47,7 +48,7 @@ class CoreApi(object):
       self._set_logging()
     else:
       if not self._log_at_level:
-        self._log_at_level = logging.WARNING
+        self._log_at_level = logging.DEBUG
         self._set_logging()
 
   # *******************************************************************
@@ -129,16 +130,16 @@ class CoreApi(object):
       'call'
       ]:
       if not request.has_key(required_key) and request[required_key]:
-        self.log("All requests are required to have a key [{}] with a value".format(required_key), level='critical')
+        self.log("All requests are required to have a key [{0}] with a value".format(required_key), level='critical')
         return None
 
     url = None
     if request['api'] == self.API_TYPE_REST:
-      url = "{}/{}".format(self._rest_api_endpoint, request['call'].lstrip('/'))
+      url = "{0}/{1}".format(self._rest_api_endpoint, request['call'].lstrip('/'))
     else:
       url = self._soap_api_endpoint
 
-    self.log("Making a request to {}".format(url), level='debug')
+    self.log("Making a request to {0}".format(url), level='debug')
 
     # add the authentication parameters
     if auth_required:
@@ -163,19 +164,10 @@ class CoreApi(object):
         if v: qs[k] = v
 
       url += '?%s' % urllib.urlencode(qs)
-      self.log("Added query string. Full URL is now {}".format(url), level='debug')
+      self.log("Added query string. Full URL is now {0}".format(url), level='debug')
 
-    self.log("URL to request is: {}".format(url))
+    self.log("URL to request is: {0}".format(url))
 
-    # Prep the SSL context
-    ssl_context = ssl.create_default_context()
-    if self.ignore_ssl_validation:
-      ssl_context.check_hostname = False
-      ssl_context.verify_mode = ssl.CERT_NONE
-      self.log("SSL certificate validation has been disabled for this call", level='warning')
-
-    # Prep the URL opener
-    url_opener = urllib2.build_opener(urllib2.HTTPSHandler(context=ssl_context))
   
     # Prep the request
     request_type = 'GET'
@@ -189,7 +181,7 @@ class CoreApi(object):
     
     # some rest calls use a cookie to pass the sID
     if request['api'] == self.API_TYPE_REST and request['use_cookie_auth']:
-      headers['Cookie'] = 'sID="{}"'.format(self._sessions[self.API_TYPE_REST])
+      headers['Cookie'] = 'sID="{0}"'.format(self._sessions[self.API_TYPE_REST])
 
     if request['api'] == self.API_TYPE_REST and request['call'] in [
       'apiVersion',
@@ -207,42 +199,54 @@ class CoreApi(object):
         'content-type': 'application/soap+xml'
         }
       data = self._prep_data_for_soap(request['call'], request['data'])
-      url_request = urllib2.Request(url, data=data, headers=headers)
+      #url_request = urllib2.Request(url, data=data, headers=headers)
       request_type = 'POST'
-      self.log("Making a SOAP request with headers {}".format(headers), level='debug')
-      self.log("   and data {}".format(data), level='debug')
+      self.log("Making a SOAP request with headers {0}".format(headers), level='debug')
+      self.log("   and data {0}".format(data), level='debug')
     elif request['call'] == 'authentication/logout':
-      url_request = urllib2.Request(url, headers=headers)
-      setattr(url_request, 'get_method', lambda: 'DELETE') # make this request use the DELETE HTTP verb
-      request_type = 'DELETE'
-      self.log("Making a REST DELETE request with headers {}".format(headers), level='debug')
+      #url_request = urllib2.Request(url, headers=headers)
+      data = "";
+      #setattr(url_request, 'get_method', lambda: 'DELETE') # make this request use the DELETE HTTP verb
+      #request_type = 'DELETE'
+      self.log("Making a REST DELETE request with headers {0}".format(headers), level='debug')
     elif request.has_key('data') and request['data']:
       # POST
-      url_request = urllib2.Request(url, data=json.dumps(request['data']), headers=headers)
+      data = json.dumps(request['data']);
+      #url_request = urllib2.Request(url, data=json.dumps(request['data']), headers=headers)
       request_type = 'POST'
-      self.log("Making a REST POST request with headers {}".format(headers), level='debug')
-      self.log("    and data {}".format(request['data']), level='debug')
+      self.log("Making a REST POST request with headers {0}".format(headers), level='debug')
+      self.log("    and data {0}".format(request['data']), level='debug')
     else:
       # GET
-      url_request = urllib2.Request(url, headers=headers)
-      self.log("Making a REST GET request with headers {}".format(headers), level='debug')
+      #url_request = urllib2.Request(url, headers=headers)
+      request_type = 'GET';
+      self.log("Making a REST GET request with headers {0}".format(headers), level='debug')
 
     # Make the request
     response = None
     try:
-      response = url_opener.open(url_request)
+        if request_type == "POST":
+            response = requests.post(url, data = data, headers=headers, verify = False)
+
+        if request_type == "DELETE": 
+            response = requests.delete(url, data=data, headers= headers, verify=False)
+
+        if request_type == "GET": 
+            response = requests.get(url, data=data, headers = headers, verify = False)
+
+      #response = url_opener.open(url_request)
     except Exception, url_err:
-      self.log("Failed to make {} {} call [{}]".format(request['api'].upper(), request_type, request['call'].lstrip('/')), err=url_err)
+      self.log("Failed to make {0} {1} call [{2}]".format(request['api'].upper(), request_type, request['call'].lstrip('/')), err=url_err)
 
     # Convert the request from JSON
     result = {
-      'status': response.getcode() if response else None,
-      'raw': response.read() if response else None,
+      'status': response.status_code if response else None,
+      'raw': response.text if response else None,
       'headers': dict(response.headers) if response else dict(),
       'data': None
     }
     bytes_of_data = len(result['raw']) if result['raw'] else 0
-    self.log("Call returned HTTP status {} and {} bytes of data".format(result['status'], bytes_of_data), level='debug')
+    self.log("Call returned HTTP status {0} and {1} bytes of data".format(result['status'], bytes_of_data), level='debug')
 
     if response:
       if request['api'] == self.API_TYPE_SOAP:
@@ -252,15 +256,15 @@ class CoreApi(object):
             full_data = xmltodict.parse(result['raw'])
             if full_data.has_key('soapenv:Envelope') and full_data['soapenv:Envelope'].has_key('soapenv:Body'):
               result['data'] = full_data['soapenv:Envelope']['soapenv:Body']
-              if result['data'].has_key('{}Response'.format(request['call'])):
-                if result['data']['{}Response'.format(request['call'])].has_key('{}Return'.format(request['call'])):
-                  result['data'] = result['data']['{}Response'.format(request['call'])]['{}Return'.format(request['call'])]
+              if result['data'].has_key('{0}Response'.format(request['call'])):
+                if result['data']['{0}Response'.format(request['call'])].has_key('{0}Return'.format(request['call'])):
+                  result['data'] = result['data']['{0}Response'.format(request['call'])]['{0}Return'.format(request['call'])]
                 else:
-                  result['data'] = result['data']['{}Response'.format(request['call'])]
+                  result['data'] = result['data']['{0}Response'.format(request['call'])]
             else:
               result['data'] = full_data
         except Exception, xmltodict_err:
-          self.log("Could not convert response from call {}".format(request['call']), err=xmltodict_err)
+          self.log("Could not convert response from call {0}".format(request['call']), err=xmltodict_err)
       else:
         # JSON response
         try:
@@ -270,7 +274,7 @@ class CoreApi(object):
         except Exception, json_err:
           # report the exception as 'info' because it's not fatal and the data is 
           # still captured in result['raw']
-          self.log("Could not convert response from call {} to JSON. Threw exception:\n\t{}".format(request['call'], json_err), level='info')
+          self.log("Could not convert response from call {0} to JSON. Threw exception:\n\t{1}".format(request['call'], json_err), level='info')
           
     return result
 
@@ -282,7 +286,7 @@ class CoreApi(object):
     if not type(d) == type({}): return d
     new_d = d.copy()
     for k,v in d.items():
-      new_key = u"{}:{}".format(prefix, k)
+      new_key = u"{0}:{1}".format(prefix, k)
       new_v = v
       if type(v) == type({}): new_v = self._prefix_keys(prefix, v)
       new_d[new_key] = new_v 
@@ -300,7 +304,7 @@ class CoreApi(object):
     <SOAP-ENV:Envelope xmlns:ns0="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns1="urn:Manager" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:SOAP-ENV="http://schemas.xmlsoap.org/soap/envelope/">
       <SOAP-ENV:Header/>
         <ns0:Body>
-          {}
+          {0}
         </ns0:Body>
     </SOAP-ENV:Envelope>
     """.format(data).strip()
@@ -325,13 +329,13 @@ class CoreApi(object):
 
     if err:
       level = 'error'
-      message += ' Threw exception:\n\t{}'.format(err)
+      message += ' Threw exception:\n\t{0}'.format(err)
 
     try:
       func = getattr(self.logger, level.lower())
       func(message)
     except Exception, log_err:
-      self.logger.critical("Could not write to log. Threw exception:\n\t{}".format(log_err))
+      self.logger.critical("Could not write to log. Threw exception:\n\t{0}".format(log_err))
 
 class CoreDict(dict):
   def __init__(self):
@@ -398,7 +402,7 @@ class CoreDict(dict):
             for match_attr_val in match_attr_vals:
               if type(attr_to_check) in [type(''), type(u'')]:
                 # string comparison
-                match = re.search(r'{}'.format(match_attr_val), attr_to_check)
+                match = re.search(r'{0}'.format(match_attr_val), attr_to_check)
                 if match:
                   item_matches = True
                   break # and move on to the new kwarg
@@ -438,7 +442,7 @@ class CoreObject(object):
       # make sure any integer IDs are stored as an int
       if new_key == 'id' and re.search('^\d+$', v.strip()): val = int(v)
       if new_key == 'policy_id':
-        if '@xsi:nil' in "{}".format(v):
+        if '@xsi:nil' in "{0}".format(v):
           val = None
         elif re.search('^\d+$', "".join(v.strip())):
           val = int(v)
@@ -447,7 +451,7 @@ class CoreObject(object):
         setattr(self, new_key, val)
       except Exception, err:
         if log_func:
-          log_func("Could not set property {} to value {} for object {}".format(k, v, s))
+          log_func("Could not set property {0} to value {1} for object {2}".format(k, v, s))
           try:
             setattr(self, log, log_func)
           except: pass
@@ -532,7 +536,7 @@ class CoreList(list):
             for match_attr_val in match_attr_vals:
               if type(attr_to_check) in [type(''), type(u'')]:
                 # string comparison
-                match = re.search(r'{}'.format(match_attr_val), attr_to_check)
+                match = re.search(r'{0}'.format(match_attr_val), attr_to_check)
                 if match:
                   item_matches = True
                   break # and move on to the new kwarg

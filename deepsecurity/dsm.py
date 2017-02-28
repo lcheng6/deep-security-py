@@ -61,8 +61,8 @@ class Manager(core.CoreApi):
     """
     Return a better string representation
     """
-    dsm_port = ":{}".format(self.port) if self.port else ""
-    return "Manager <{}{}>".format(self.hostname, dsm_port)
+    dsm_port = ":{0}".format(self.port) if self.port else ""
+    return "Manager <{0}{1}>".format(self.hostname, dsm_port)
 
   # *******************************************************************
   # properties
@@ -124,9 +124,9 @@ class Manager(core.CoreApi):
     """
     Set the API endpoints based on the current configuration
     """
-    dsm_port = ":{}".format(self.port) if self.port else "" # allow for endpoints with no port specified
-    self._rest_api_endpoint = "https://{}{}/{}rest".format(self.hostname, dsm_port, self.prefix)
-    self._soap_api_endpoint = "https://{}{}/{}webservice/Manager".format(self.hostname, dsm_port, self.prefix)
+    dsm_port = ":{0}".format(self.port) if self.port else "" # allow for endpoints with no port specified
+    self._rest_api_endpoint = "https://{0}{1}/{2}rest".format(self.hostname, dsm_port, self.prefix)
+    self._soap_api_endpoint = "https://{0}{1}/{2}webservice/Manager".format(self.hostname, dsm_port, self.prefix)
 
   def _reset_session(self):
     """
@@ -153,7 +153,7 @@ class Manager(core.CoreApi):
     """
     user_credentials_path = os.path.expanduser('~/.deepsecurity/credentials')
     if os.path.exists(user_credentials_path):
-      self.log("Found local credentials file at [{}]".format(user_credentials_path))
+      self.log("Found local credentials file at [{0}]".format(user_credentials_path))
       credentials = {
         'username': None,
         'password': None,
@@ -175,10 +175,10 @@ class Manager(core.CoreApi):
         if v:
           if k in dir(self):
             try:
-              setattr(self, "_{}".format(k), v)
-              self.log("Loaded {} from local credentials file".format(k))
+              setattr(self, "_{0}".format(k), v)
+              self.log("Loaded {0} from local credentials file".format(k))
             except Exception, err:
-              self.log("Unable to load {} from local credentials file".format(k))
+              self.log("Unable to load {0} from local credentials file".format(k))
   
   def sign_in(self):
     """

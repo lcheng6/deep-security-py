@@ -62,7 +62,7 @@ class CloudAccounts(core.CoreDict):
               'accessKey': aws_access_key,
               'secretKey': aws_secret_key,
               'cloudType': 'AMAZON',
-              'name': '{} / {}'.format(name, region_to_add),
+              'name': '{0} / {1}'.format(name, region_to_add),
               'cloudRegion': regions[region_to_add],
             },
           }
