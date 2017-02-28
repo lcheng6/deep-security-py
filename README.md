@@ -1,6 +1,6 @@
 # DeepSecurity.py
 
-A unified python SDK for the Deep Security APIs
+A unified python SDK for the Deep Security APIs, now compatible with Python 2.6
 
 ## Support
 
